@@ -1,0 +1,1152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Avyukt Badminton App</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8; /* Light blue-gray background */
+        }
+        .sporty-font {
+            font-family: 'Inter', sans-serif; /* Using Inter, but you could import a custom sporty font */
+            font-weight: 700;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        .btn-primary {
+            @apply bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transform transition-transform duration-200 hover:scale-105;
+        }
+        .btn-secondary {
+            @apply bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-lg shadow-md transition-transform duration-200 hover:scale-105;
+        }
+        .input-field {
+            @apply px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500;
+        }
+        .table-header {
+            @apply px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider;
+        }
+        .table-cell {
+            @apply px-4 py-3 whitespace-nowrap text-sm text-gray-900;
+        }
+        .message-box {
+            @apply fixed top-4 left-1/2 -translate-x-1/2 z-50 p-4 rounded-lg shadow-xl text-white font-semibold;
+            min-width: 250px;
+            text-align: center;
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+        }
+        .message-box.show {
+            opacity: 1;
+        }
+        .message-box.success {
+            background-color: #4CAF50; /* Green */
+        }
+        .message-box.error {
+            background-color: #F44336; /* Red */
+        }
+        .message-box.info {
+            background-color: #2196F3; /* Blue */
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center py-10">
+    <div class="container mx-auto p-6 bg-white rounded-xl shadow-2xl max-w-4xl w-full">
+        <!-- Message Box -->
+        <div id="messageBox" class="message-box"></div>
+
+        <!-- Splash Screen / Welcome -->
+        <div id="splashScreen" class="text-center transition-opacity duration-500">
+            <h1 class="text-6xl text-blue-700 sporty-font mb-8">Avyukt</h1>
+            <p class="text-xl text-gray-700 mb-12">Your ultimate badminton companion!</p>
+            <button id="startButton" class="btn-primary">Get Started</button>
+        </div>
+
+        <!-- Main App Content -->
+        <div id="appContent" class="hidden transition-opacity duration-500">
+            <h2 class="text-4xl text-blue-700 sporty-font text-center mb-8">Avyukt Badminton</h2>
+
+            <!-- Player Input Section -->
+            <div id="playerInputSection" class="bg-blue-50 p-6 rounded-lg shadow-inner mb-8">
+                <h3 class="text-2xl font-semibold text-blue-800 mb-4">1. Setup Players</h3>
+                <div class="mb-6">
+                    <label for="playerCountSlider" class="block text-lg font-medium text-gray-700 mb-2">Number of Players (2-14, even): <span id="playerCountDisplay" class="font-bold text-blue-600">4</span></label>
+                    <input type="range" id="playerCountSlider" min="2" max="14" step="2" value="4" class="w-full h-2 bg-blue-200 rounded-lg appearance-none cursor-pointer">
+                </div>
+                <div id="playerNamesContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <!-- Player name inputs will be dynamically added here -->
+                </div>
+                <button id="generateTeamsBtn" class="btn-primary w-full">Generate Teams & Fixtures</button>
+            </div>
+
+            <!-- Fixtures Section -->
+            <div id="fixturesSection" class="hidden bg-green-50 p-6 rounded-lg shadow-inner mb-8">
+                <h3 class="text-2xl font-semibold text-green-800 mb-4">2. League Fixtures</h3>
+                <div id="fixturesContainer" class="space-y-4">
+                    <!-- Fixtures will be dynamically added here -->
+                </div>
+                <button id="startLeagueBtn" class="btn-primary w-full mt-6">Start League Matches</button>
+            </div>
+
+            <!-- Scorecard Modal -->
+            <div id="scorecardModal" class="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center p-4 z-50 hidden">
+                <div class="bg-white p-8 rounded-xl shadow-2xl w-full max-w-md">
+                    <h3 class="text-3xl font-bold text-blue-700 mb-6 text-center">Update Score</h3>
+                    <p id="scorecardMatchInfo" class="text-xl font-semibold text-gray-800 mb-6 text-center"></p>
+
+                    <div class="mb-6">
+                        <label class="block text-lg font-medium text-gray-700 mb-2">Scoring Method:</label>
+                        <div class="flex space-x-4">
+                            <label class="inline-flex items-center">
+                                <input type="radio" name="scoringMethod" value="live" checked class="form-radio text-blue-600 h-5 w-5" id="liveScoreOption">
+                                <span class="ml-2 text-gray-700">Live Scoring</span>
+                            </label>
+                            <label class="inline-flex items-center">
+                                <input type="radio" name="scoringMethod" value="final" class="form-radio text-blue-600 h-5 w-5" id="finalScoreOption">
+                                <span class="ml-2 text-gray-700">Final Score</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div id="liveScoreControls" class="grid grid-cols-2 gap-4 mb-6">
+                        <div class="text-center">
+                            <p class="text-lg font-medium text-gray-700 mb-2">Team 1 Score</p>
+                            <div class="flex items-center justify-center space-x-2">
+                                <button id="team1ScoreMinus" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-full">-</button>
+                                <span id="team1ScoreDisplay" class="text-4xl font-bold text-blue-700">0</span>
+                                <button id="team1ScorePlus" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-full">+</button>
+                            </div>
+                        </div>
+                        <div class="text-center">
+                            <p class="text-lg font-medium text-gray-700 mb-2">Team 2 Score</p>
+                            <div class="flex items-center justify-center space-x-2">
+                                <button id="team2ScoreMinus" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-full">-</button>
+                                <span id="team2ScoreDisplay" class="text-4xl font-bold text-blue-700">0</span>
+                                <button id="team2ScorePlus" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-full">+</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="finalScoreInputs" class="grid grid-cols-2 gap-4 mb-6 hidden">
+                        <div>
+                            <label for="finalTeam1Score" class="block text-lg font-medium text-gray-700 mb-2">Team 1 Final Score</label>
+                            <input type="number" id="finalTeam1Score" min="0" value="0" class="input-field w-full">
+                        </div>
+                        <div>
+                            <label for="finalTeam2Score" class="block text-lg font-medium text-gray-700 mb-2">Team 2 Final Score</label>
+                            <input type="number" id="finalTeam2Score" min="0" value="0" class="input-field w-full">
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end space-x-4">
+                        <button id="cancelScoreBtn" class="btn-secondary">Cancel</button>
+                        <button id="saveScoreBtn" class="btn-primary">Save Score</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Points Table Section -->
+            <div id="pointsTableSection" class="hidden bg-yellow-50 p-6 rounded-lg shadow-inner mb-8">
+                <h3 class="text-2xl font-semibold text-yellow-800 mb-4">3. League Standings</h3>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200 rounded-lg overflow-hidden">
+                        <thead class="bg-yellow-100">
+                            <tr>
+                                <th class="table-header">Rank</th>
+                                <th class="table-header">Team</th>
+                                <th class="table-header">Wins</th>
+                                <th class="table-header">Losses</th>
+                                <th class="table-header">Points</th>
+                                <th class="table-header">Net Score</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pointsTableBody" class="bg-white divide-y divide-gray-200">
+                            <!-- Points table rows will be dynamically added here -->
+                        </tbody>
+                    </table>
+                </div>
+                <button id="startKnockoutBtn" class="btn-primary w-full mt-6">Start Knockout Stage</button>
+            </div>
+
+            <!-- Knockout Stage Section -->
+            <div id="knockoutSection" class="hidden bg-purple-50 p-6 rounded-lg shadow-inner mb-8">
+                <h3 class="text-2xl font-semibold text-purple-800 mb-4">4. Knockout Stage</h3>
+                <div id="knockoutMatchesContainer" class="space-y-4">
+                    <!-- Knockout matches will be dynamically added here -->
+                </div>
+                <div id="finalWinnerDisplay" class="text-center text-3xl font-bold text-purple-700 mt-8 hidden">
+                    <!-- Final winner will be displayed here -->
+                </div>
+                <button id="saveTournamentBtn" class="btn-primary w-full mt-6">Save Tournament & View Records</button>
+            </div>
+
+            <!-- Calendar/Records Section -->
+            <div id="recordsSection" class="hidden bg-teal-50 p-6 rounded-lg shadow-inner">
+                <h3 class="text-2xl font-semibold text-teal-800 mb-4">5. Past Tournaments</h3>
+                <div id="pastTournamentsList" class="space-y-3 mb-6">
+                    <!-- List of saved tournaments will be here -->
+                </div>
+                <button id="newTournamentBtn" class="btn-primary w-full">Start New Tournament</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global state for the application
+        let appState = {
+            players: [],
+            teams: [],
+            leagueMatches: [],
+            knockoutMatches: [],
+            currentPhase: 'splash', // 'splash', 'input', 'fixtures', 'scorecard', 'pointsTable', 'knockout', 'records'
+            currentMatchIndex: -1, // Index of the match being scored in scorecard modal
+            currentMatchArrayType: null, // 'league' or 'knockout'
+            tournamentHistory: {}, // { 'YYYY-MM-DD': TournamentDayObject }
+            selectedDate: null, // For viewing past records
+            scorecardLiveTeam1Score: 0,
+            scorecardLiveTeam2Score: 0
+        };
+
+        // --- DOM Elements ---
+        const splashScreen = document.getElementById('splashScreen');
+        const appContent = document.getElementById('appContent');
+        const startButton = document.getElementById('startButton');
+
+        const playerInputSection = document.getElementById('playerInputSection');
+        const playerCountSlider = document.getElementById('playerCountSlider');
+        const playerCountDisplay = document.getElementById('playerCountDisplay');
+        const playerNamesContainer = document.getElementById('playerNamesContainer');
+        const generateTeamsBtn = document.getElementById('generateTeamsBtn');
+
+        const fixturesSection = document.getElementById('fixturesSection');
+        const fixturesContainer = document.getElementById('fixturesContainer');
+        const startLeagueBtn = document.getElementById('startLeagueBtn');
+
+        const scorecardModal = document.getElementById('scorecardModal');
+        const scorecardMatchInfo = document.getElementById('scorecardMatchInfo');
+        const liveScoreOption = document.getElementById('liveScoreOption');
+        const finalScoreOption = document.getElementById('finalScoreOption');
+        const liveScoreControls = document.getElementById('liveScoreControls');
+        const finalScoreInputs = document.getElementById('finalScoreInputs');
+        const team1ScoreDisplay = document.getElementById('team1ScoreDisplay');
+        const team2ScoreDisplay = document.getElementById('team2ScoreDisplay');
+        const team1ScorePlus = document.getElementById('team1ScorePlus');
+        const team1ScoreMinus = document.getElementById('team1ScoreMinus');
+        const team2ScorePlus = document.getElementById('team2ScorePlus');
+        const team2ScoreMinus = document.getElementById('team2ScoreMinus');
+        const finalTeam1ScoreInput = document.getElementById('finalTeam1Score');
+        const finalTeam2ScoreInput = document.getElementById('finalTeam2Score');
+        const saveScoreBtn = document.getElementById('saveScoreBtn');
+        const cancelScoreBtn = document.getElementById('cancelScoreBtn');
+
+        const pointsTableSection = document.getElementById('pointsTableSection');
+        const pointsTableBody = document.getElementById('pointsTableBody');
+        const startKnockoutBtn = document.getElementById('startKnockoutBtn');
+
+        const knockoutSection = document.getElementById('knockoutSection');
+        const knockoutMatchesContainer = document.getElementById('knockoutMatchesContainer');
+        const finalWinnerDisplay = document.getElementById('finalWinnerDisplay');
+        const saveTournamentBtn = document.getElementById('saveTournamentBtn');
+
+        const recordsSection = document.getElementById('recordsSection');
+        const pastTournamentsList = document.getElementById('pastTournamentsList');
+        const newTournamentBtn = document.getElementById('newTournamentBtn');
+
+        const messageBox = document.getElementById('messageBox');
+
+        // --- Data Classes (Conceptual) ---
+        class Player {
+            constructor(name) {
+                this.name = name;
+            }
+        }
+
+        class Team {
+            constructor(teamId, player1, player2) {
+                this.teamId = teamId;
+                this.player1 = player1;
+                this.player2 = player2;
+                this.wins = 0;
+                this.losses = 0;
+                this.points = 0; // 2 points per win
+                this.netScore = 0; // For tie-breaking
+            }
+
+            // Helper to get team name for display
+            get displayName() {
+                return `${this.teamId} (${this.player1.name.split(' ')[0]} & ${this.player2.name.split(' ')[0]})`;
+            }
+        }
+
+        class Match {
+            constructor(matchId, team1, team2, type = 'league') {
+                this.matchId = matchId;
+                this.team1 = team1;
+                this.team2 = team2;
+                this.team1Score = 0;
+                this.team2Score = 0;
+                this.isPlayed = false;
+                this.winnerTeamId = null; // Store ID to re-link after loading from storage
+                this.type = type; // 'league', 'semi-final', 'final'
+            }
+        }
+
+        class TournamentDay {
+            constructor(date, players, teams, leagueMatches, knockoutMatches, finalRankings, winnerTeamId) {
+                this.date = date;
+                this.players = players;
+                this.teams = teams;
+                this.leagueMatches = leagueMatches;
+                this.knockoutMatches = knockoutMatches;
+                this.finalRankings = finalRankings;
+                this.winnerTeamId = winnerTeamId;
+            }
+        }
+
+        // --- Utility Functions ---
+
+        /**
+         * Displays a temporary message box.
+         * @param {string} message - The message to display.
+         * @param {string} type - 'success', 'error', or 'info'.
+         */
+        function showMessage(message, type) {
+            messageBox.textContent = message;
+            messageBox.className = `message-box show ${type}`;
+            setTimeout(() => {
+                messageBox.classList.remove('show');
+            }, 3000); // Message disappears after 3 seconds
+        }
+
+        /**
+         * Renders player name input fields based on the selected player count.
+         */
+        function renderPlayerInputs() {
+            const count = parseInt(playerCountSlider.value);
+            playerNamesContainer.innerHTML = ''; // Clear existing inputs
+            appState.players = []; // Clear existing players
+
+            for (let i = 0; i < count; i++) {
+                const inputDiv = document.createElement('div');
+                inputDiv.className = 'flex flex-col';
+                inputDiv.innerHTML = `
+                    <label for="player${i + 1}Name" class="text-sm font-medium text-gray-700 mb-1">Player ${i + 1} Name:</label>
+                    <input type="text" id="player${i + 1}Name" placeholder="Enter name" class="input-field player-name-input" required>
+                `;
+                playerNamesContainer.appendChild(inputDiv);
+            }
+        }
+
+        /**
+         * Validates player names to contain only alphabets and spaces.
+         * @param {string} name - The player name to validate.
+         * @returns {boolean} True if valid, false otherwise.
+         */
+        function isValidName(name) {
+            return /^[a-zA-Z\s]+$/.test(name.trim());
+        }
+
+        /**
+         * Creates teams from the list of players.
+         * @param {Player[]} players - List of Player objects.
+         * @returns {Team[]} List of Team objects.
+         */
+        function createTeams(players) {
+            const shuffledPlayers = [...players].sort(() => 0.5 - Math.random()); // Shuffle players
+            const teams = [];
+            for (let i = 0; i < shuffledPlayers.length; i += 2) {
+                const teamId = String.fromCharCode(65 + (i / 2)); // A, B, C, D...
+                teams.push(new Team(teamId, shuffledPlayers[i], shuffledPlayers[i + 1]));
+            }
+            return teams;
+        }
+
+        /**
+         * Generates league fixtures ensuring each team plays exactly 2 matches.
+         * This uses a cycle graph approach for N >= 4 teams.
+         * For N=2 teams, it generates 1 match.
+         * @param {Team[]} teams - List of Team objects.
+         * @returns {Match[]} List of Match objects.
+         */
+        function generateFixtures(teams) {
+            const matches = [];
+            const numTeams = teams.length;
+
+            if (numTeams < 2) {
+                showMessage("Not enough teams to generate fixtures.", "error");
+                return matches;
+            }
+
+            if (numTeams === 2) {
+                // For 2 teams, only one match is possible.
+                matches.push(new Match(`L1`, teams[0], teams[1], 'league'));
+                showMessage("Only 2 players, generating a single match. Each team plays 1 match.", "info");
+            } else {
+                // For 4 or more teams, create a cycle of matches to ensure exactly 2 matches per team.
+                // Example for 4 teams (A,B,C,D): A vs B, B vs C, C vs D, D vs A
+                for (let i = 0; i < numTeams; i++) {
+                    const team1 = teams[i];
+                    const team2 = teams[(i + 1) % numTeams]; // Next team in the cycle
+                    matches.push(new Match(`L${matches.length + 1}`, team1, team2, 'league'));
+                }
+            }
+
+            // Shuffle matches to randomize the sequence
+            return matches.sort(() => 0.5 - Math.random());
+        }
+
+        /**
+         * Renders the league fixtures.
+         */
+        function renderFixtures() {
+            fixturesContainer.innerHTML = '';
+            if (appState.leagueMatches.length === 0) {
+                fixturesContainer.innerHTML = '<p class="text-gray-600">No matches generated. Please generate teams first.</p>';
+                return;
+            }
+
+            appState.leagueMatches.forEach((match, index) => {
+                const matchDiv = document.createElement('div');
+                matchDiv.className = `flex items-center justify-between p-4 rounded-lg shadow-md ${match.isPlayed ? 'bg-gray-200' : 'bg-white'} transition-colors duration-200`;
+                matchDiv.innerHTML = `
+                    <span class="text-lg font-semibold text-gray-800">${match.team1.displayName} vs ${match.team2.displayName}</span>
+                    <button data-match-index="${index}" data-match-type="league" class="update-score-btn btn-secondary ${match.isPlayed ? 'opacity-50 cursor-not-allowed' : ''}" ${match.isPlayed ? 'disabled' : ''}>
+                        ${match.isPlayed ? `✅ Done (${match.team1Score}-${match.team2Score})` : 'Update Now'}
+                    </button>
+                `;
+                fixturesContainer.appendChild(matchDiv);
+            });
+
+            // Attach event listeners to update score buttons
+            document.querySelectorAll('.update-score-btn').forEach(button => {
+                button.onclick = (event) => {
+                    const index = parseInt(event.target.dataset.matchIndex);
+                    const type = event.target.dataset.matchType; // Get the match type
+                    openScorecardModal(index, type);
+                };
+            });
+            updateStartLeagueButtonState();
+        }
+
+        /**
+         * Opens the scorecard modal for a given match.
+         * @param {number} matchIndex - Index of the match.
+         * @param {string} matchType - 'league' or 'knockout'.
+         */
+        function openScorecardModal(matchIndex, matchType) {
+            appState.currentMatchIndex = matchIndex;
+            appState.currentMatchArrayType = matchType; // Store the type of match array
+
+            const matchesArray = matchType === 'league' ? appState.leagueMatches : appState.knockoutMatches;
+            const match = matchesArray[matchIndex];
+
+            if (!match) {
+                showMessage("Error: Match not found.", "error");
+                return;
+            }
+
+            scorecardMatchInfo.textContent = `${match.team1.displayName} vs ${match.team2.displayName}`;
+
+            // Reset scores for live scoring
+            appState.scorecardLiveTeam1Score = match.team1Score;
+            appState.scorecardLiveTeam2Score = match.team2Score;
+            team1ScoreDisplay.textContent = appState.scorecardLiveTeam1Score;
+            team2ScoreDisplay.textContent = appState.scorecardLiveTeam2Score;
+
+            // Reset scores for final scoring
+            finalTeam1ScoreInput.value = match.team1Score;
+            finalTeam2ScoreInput.value = match.team2Score;
+
+            // Default to live scoring view
+            liveScoreOption.checked = true;
+            liveScoreControls.classList.remove('hidden');
+            finalScoreInputs.classList.add('hidden');
+
+            scorecardModal.classList.remove('hidden');
+        }
+
+        /**
+         * Closes the scorecard modal.
+         */
+        function closeScorecardModal() {
+            scorecardModal.classList.add('hidden');
+            appState.currentMatchIndex = -1;
+            appState.currentMatchArrayType = null;
+        }
+
+        /**
+         * Updates the score of a match and recalculates team stats.
+         * @param {number} matchIndex - Index of the match to update.
+         * @param {number} score1 - Score for team 1.
+         * @param {number} score2 - Score for team 2.
+         * @param {string} matchType - 'league', 'semi-final', or 'final'.
+         * @returns {boolean} True if a winner was determined, false otherwise.
+         */
+        function updateMatchScore(matchIndex, score1, score2, matchType) {
+            const matches = matchType === 'league' ? appState.leagueMatches : appState.knockoutMatches;
+            const match = matches[matchIndex];
+
+            if (!match) {
+                showMessage("Error: Match not found for score update.", "error");
+                return false;
+            }
+
+            // Revert previous scores if already played to avoid double counting
+            if (match.isPlayed) {
+                const prevWinner = appState.teams.find(t => t.teamId === match.winnerTeamId);
+                if (prevWinner) {
+                    prevWinner.wins--;
+                    prevWinner.points -= 2;
+                }
+                // Determine the previous loser correctly
+                const prevLoserId = (prevWinner && prevWinner.teamId === match.team1.teamId) ? match.team2.teamId : match.team1.teamId;
+                const prevLoser = appState.teams.find(t => t.teamId === prevLoserId);
+                if (prevLoser) {
+                    prevLoser.losses--;
+                }
+                match.team1.netScore -= (match.team1Score - match.team2Score);
+                match.team2.netScore -= (match.team2Score - match.team1Score);
+            }
+
+            match.team1Score = score1;
+            match.team2Score = score2;
+
+            let winnerDetermined = false;
+
+            // Badminton Scoring Logic:
+            if (score1 >= 21 && (score1 - score2 >= 2)) {
+                match.winnerTeamId = match.team1.teamId;
+                winnerDetermined = true;
+            } else if (score2 >= 21 && (score2 - score1 >= 2)) {
+                match.winnerTeamId = match.team2.teamId;
+                winnerDetermined = true;
+            } else if (score1 >= 30) { // Cap at 30 points
+                match.winnerTeamId = match.team1.teamId;
+                winnerDetermined = true;
+            } else if (score2 >= 30) { // Cap at 30 points
+                match.winnerTeamId = match.team2.teamId;
+                winnerDetermined = true;
+            } else if (score1 === score2 && score1 >= 20) { // Deuce scenario
+                winnerDetermined = false; // Game continues
+            } else if (score1 < 21 && score2 < 21) {
+                winnerDetermined = false; // Game continues below 21
+            }
+
+
+            if (winnerDetermined) {
+                const winnerTeam = appState.teams.find(t => t.teamId === match.winnerTeamId);
+                const loserTeam = (winnerTeam === match.team1) ? match.team2 : match.team1;
+
+                winnerTeam.wins++;
+                winnerTeam.points += 2;
+                loserTeam.losses++;
+                match.isPlayed = true; // Confirm played if winner determined
+                showMessage("Score updated and winner determined!", "success");
+            } else {
+                match.isPlayed = false; // Game is still ongoing
+                showMessage("Score updated. Game continues!", "info");
+            }
+
+
+            match.team1.netScore += (score1 - score2);
+            match.team2.netScore += (score2 - score1);
+
+            // Re-render UI based on current phase
+            if (appState.currentPhase === 'league') {
+                renderFixtures();
+                updateStartLeagueButtonState();
+            } else if (appState.currentPhase === 'knockout') {
+                renderKnockoutMatches();
+                updateStartKnockoutButtonState();
+            }
+            return winnerDetermined; // Return status
+        }
+
+        /**
+         * Checks if all league matches are played.
+         * @returns {boolean} True if all league matches are played, false otherwise.
+         */
+        function allLeagueMatchesPlayed() {
+            return appState.leagueMatches.every(match => match.isPlayed);
+        }
+
+        /**
+         * Updates the state of the "Start League" button.
+         */
+        function updateStartLeagueButtonState() {
+            if (allLeagueMatchesPlayed()) {
+                startLeagueBtn.textContent = 'View Points Table';
+                startLeagueBtn.classList.remove('btn-primary');
+                startLeagueBtn.classList.add('bg-green-600', 'hover:bg-green-700');
+            } else {
+                startLeagueBtn.textContent = 'Start League Matches';
+                startLeagueBtn.classList.add('btn-primary');
+                startLeagueBtn.classList.remove('bg-green-600', 'hover:bg-green-700');
+            }
+        }
+
+        /**
+         * Generates and renders the points table.
+         * @returns {Team[]} The sorted list of teams.
+         */
+        function renderPointsTable() {
+            const rankedTeams = [...appState.teams].sort((a, b) => {
+                if (b.points !== a.points) {
+                    return b.points - a.points; // Sort by points (desc)
+                }
+                return b.netScore - a.netScore; // Then by net score (desc)
+            });
+
+            pointsTableBody.innerHTML = '';
+            if (rankedTeams.length === 0) {
+                pointsTableBody.innerHTML = '<tr><td colspan="6" class="table-cell text-center text-gray-500">No teams to display.</td></tr>';
+                return rankedTeams;
+            }
+
+            rankedTeams.forEach((team, index) => {
+                const row = document.createElement('tr');
+                row.className = `${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-gray-100`;
+                row.innerHTML = `
+                    <td class="table-cell font-medium">${index + 1}</td>
+                    <td class="table-cell">${team.displayName}</td>
+                    <td class="table-cell">${team.wins}</td>
+                    <td class="table-cell">${team.losses}</td>
+                    <td class="table-cell font-bold text-blue-700">${team.points}</td>
+                    <td class="table-cell">${team.netScore}</td>
+                `;
+                pointsTableBody.appendChild(row);
+            });
+
+            appState.rankedTeams = rankedTeams; // Store for knockout stage
+            updateStartKnockoutButtonState();
+            return rankedTeams;
+        }
+
+        /**
+         * Checks if all knockout matches are played.
+         * Returns false if there are no knockout matches yet (meaning they haven't been generated).
+         * @returns {boolean} True if all knockout matches are played, false otherwise.
+         */
+        function allKnockoutMatchesPlayed() {
+            if (appState.knockoutMatches.length === 0) {
+                return false; // No matches generated yet, so they aren't "all played"
+            }
+            return appState.knockoutMatches.every(match => match.isPlayed);
+        }
+
+        /**
+         * Updates the state of the "Start Knockout" button.
+         */
+        function updateStartKnockoutButtonState() {
+            console.log('updateStartKnockoutButtonState called.');
+            console.log('appState.rankedTeams:', appState.rankedTeams);
+            console.log('appState.rankedTeams.length:', appState.rankedTeams ? appState.rankedTeams.length : 'N/A');
+            console.log('allKnockoutMatchesPlayed():', allKnockoutMatchesPlayed());
+
+            if (!appState.rankedTeams || appState.rankedTeams.length < 4) {
+                startKnockoutBtn.textContent = 'Not enough teams for knockout (min 4)';
+                startKnockoutBtn.classList.remove('btn-primary');
+                startKnockoutBtn.classList.add('bg-gray-400', 'cursor-not-allowed');
+                startKnockoutBtn.disabled = true;
+                finalWinnerDisplay.classList.add('hidden'); // Hide winner if conditions not met
+            } else if (allKnockoutMatchesPlayed()) {
+                startKnockoutBtn.textContent = 'Knockout Complete!';
+                startKnockoutBtn.classList.remove('btn-primary');
+                startKnockoutBtn.classList.add('bg-gray-400', 'cursor-not-allowed');
+                startKnockoutBtn.disabled = true;
+                displayFinalWinner();
+            } else {
+                startKnockoutBtn.textContent = 'Start Knockout Stage';
+                startKnockoutBtn.classList.add('btn-primary');
+                startKnockoutBtn.classList.remove('bg-gray-400', 'cursor-not-allowed');
+                startKnockoutBtn.disabled = false;
+                finalWinnerDisplay.classList.add('hidden'); // Hide winner if knockout not complete
+            }
+        }
+
+        /**
+         * Generates and renders knockout stage matches (Semi-Finals and Final).
+         */
+        function renderKnockoutMatches() {
+            knockoutMatchesContainer.innerHTML = '';
+            finalWinnerDisplay.classList.add('hidden');
+
+            const rankedTeams = appState.rankedTeams;
+            if (!rankedTeams || rankedTeams.length < 4) {
+                knockoutMatchesContainer.innerHTML = '<p class="text-gray-600">Need at least 4 teams for knockout stage.</p>';
+                return;
+            }
+
+            // Semi-Finals
+            // Only create if not already existing
+            if (appState.knockoutMatches.filter(m => m.type === 'semi-final').length === 0) {
+                const sf1 = new Match(`SF1`, rankedTeams[0], rankedTeams[1], 'semi-final'); // 1st vs 2nd
+                const sf2 = new Match(`SF2`, rankedTeams[2], rankedTeams[3], 'semi-final'); // 3rd vs 4th
+                appState.knockoutMatches.push(sf1, sf2);
+            }
+
+
+            // Render Semi-Finals
+            appState.knockoutMatches.filter(m => m.type === 'semi-final').forEach((match, index) => {
+                const matchDiv = document.createElement('div');
+                matchDiv.className = `flex items-center justify-between p-4 rounded-lg shadow-md ${match.isPlayed ? 'bg-gray-200' : 'bg-white'} transition-colors duration-200`;
+                matchDiv.innerHTML = `
+                    <span class="text-lg font-semibold text-gray-800">${match.matchId}: ${match.team1.displayName} vs ${match.team2.displayName}</span>
+                    <button data-match-index="${index}" data-match-type="knockout" class="update-score-btn btn-secondary ${match.isPlayed ? 'opacity-50 cursor-not-allowed' : ''}" ${match.isPlayed ? 'disabled' : ''}>
+                        ${match.isPlayed ? `✅ Done (${match.team1Score}-${match.team2Score})` : 'Update Now'}
+                    </button>
+                `;
+                knockoutMatchesContainer.appendChild(matchDiv);
+            });
+
+            // Check if Semi-Finals are played to generate Final
+            const sfMatches = appState.knockoutMatches.filter(m => m.type === 'semi-final');
+            const allSfPlayed = sfMatches.every(m => m.isPlayed);
+
+            if (allSfPlayed) {
+                const sf1Winner = appState.teams.find(t => t.teamId === sfMatches[0].winnerTeamId);
+                const sf2Winner = appState.teams.find(t => t.teamId === sfMatches[1].winnerTeamId);
+
+                if (sf1Winner && sf2Winner) {
+                    // Only create final if not already existing
+                    if (appState.knockoutMatches.filter(m => m.type === 'final').length === 0) {
+                        const finalMatch = new Match(`Final`, sf1Winner, sf2Winner, 'final');
+                        appState.knockoutMatches.push(finalMatch);
+                    }
+
+                    // Render Final
+                    const finalMatch = appState.knockoutMatches.find(m => m.type === 'final');
+                    if (finalMatch) {
+                        const finalDiv = document.createElement('div');
+                        // Apply bold and larger text for the final match
+                        finalDiv.className = `flex items-center justify-between p-4 rounded-lg shadow-md mt-6 ${finalMatch.isPlayed ? 'bg-gray-200' : 'bg-white'} transition-colors duration-200 border-2 border-purple-500 font-bold text-xl`;
+                        finalDiv.innerHTML = `
+                            <span class="text-xl font-bold text-purple-800">${finalMatch.matchId}: ${finalMatch.team1.displayName} vs ${finalMatch.team2.displayName}</span>
+                            <button data-match-index="${appState.knockoutMatches.indexOf(finalMatch)}" data-match-type="knockout" class="update-score-btn btn-primary ${finalMatch.isPlayed ? 'opacity-50 cursor-not-allowed' : ''}" ${finalMatch.isPlayed ? 'disabled' : ''}>
+                                ${finalMatch.isPlayed ? `✅ Done (${finalMatch.team1Score}-${finalMatch.team2Score})` : 'Update Now'}
+                            </button>
+                        `;
+                        knockoutMatchesContainer.appendChild(finalDiv);
+                    }
+                }
+            }
+
+            // Attach event listeners to knockout update score buttons
+            document.querySelectorAll('#knockoutMatchesContainer .update-score-btn').forEach(button => {
+                button.onclick = (event) => {
+                    const index = parseInt(event.target.dataset.matchIndex);
+                    const type = event.target.dataset.matchType; // Get the match type
+                    openScorecardModal(index, type);
+                };
+            });
+            updateStartKnockoutButtonState();
+        }
+
+        /**
+         * Displays the final winner of the tournament.
+         */
+        function displayFinalWinner() {
+            const finalMatch = appState.knockoutMatches.find(m => m.type === 'final');
+            if (finalMatch && finalMatch.isPlayed && finalMatch.winnerTeamId) {
+                const winner = appState.teams.find(t => t.teamId === finalMatch.winnerTeamId);
+                if (winner) {
+                    finalWinnerDisplay.textContent = `Team of the Day: ${winner.displayName}!`;
+                    finalWinnerDisplay.classList.remove('hidden');
+                }
+            }
+        }
+
+        /**
+         * Saves the current tournament data to local storage.
+         */
+        function saveTournament() {
+            const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+            const winnerTeamId = appState.knockoutMatches.find(m => m.type === 'final')?.winnerTeamId || null;
+
+            const currentTournament = new TournamentDay(
+                today,
+                appState.players,
+                appState.teams,
+                appState.leagueMatches,
+                appState.knockoutMatches,
+                appState.rankedTeams,
+                winnerTeamId
+            );
+            appState.tournamentHistory[today] = currentTournament;
+            localStorage.setItem('avyuktTournamentHistory', JSON.stringify(appState.tournamentHistory));
+            showMessage("Tournament saved successfully!", "success");
+            renderPastTournaments();
+        }
+
+        /**
+         * Loads tournament history from local storage.
+         */
+        function loadTournamentHistory() {
+            const historyJson = localStorage.getItem('avyuktTournamentHistory');
+            if (historyJson) {
+                const rawHistory = JSON.parse(historyJson);
+                // Reconstruct objects from plain JSON to class instances
+                appState.tournamentHistory = {};
+                for (const date in rawHistory) {
+                    const rawTour = rawHistory[date];
+                    const players = rawTour.players.map(p => new Player(p.name));
+                    // Re-link teams to player objects
+                    const teams = rawTour.teams.map(t => new Team(t.teamId, players.find(p => p.name === t.player1.name), players.find(p => p.name === t.player2.name)));
+                    // Copy other properties back to the team objects
+                    rawTour.teams.forEach(rawTeam => {
+                        const team = teams.find(t => t.teamId === rawTeam.teamId);
+                        if (team) {
+                            Object.assign(team, rawTeam);
+                        }
+                    });
+
+                    const leagueMatches = rawTour.leagueMatches.map(m => {
+                        const team1 = teams.find(t => t.teamId === m.team1.teamId);
+                        const team2 = teams.find(t => t.teamId === m.team2.teamId);
+                        const match = new Match(m.matchId, team1, team2, m.type);
+                        Object.assign(match, m); // Copy other properties like scores, isPlayed
+                        return match;
+                    });
+                     const knockoutMatches = rawTour.knockoutMatches.map(m => {
+                        const team1 = teams.find(t => t.teamId === m.team1.teamId);
+                        const team2 = teams.find(t => t.teamId === m.team2.teamId);
+                        const match = new Match(m.matchId, team1, team2, m.type);
+                        Object.assign(match, m);
+                        return match;
+                    });
+                    const finalRankings = rawTour.finalRankings.map(t => teams.find(team => team.teamId === t.teamId)); // Link back to actual team objects
+                    appState.tournamentHistory[date] = new TournamentDay(date, players, teams, leagueMatches, knockoutMatches, finalRankings, rawTour.winnerTeamId);
+                }
+            }
+        }
+
+        /**
+         * Renders the list of past tournaments in the calendar section.
+         */
+        function renderPastTournaments() {
+            pastTournamentsList.innerHTML = '';
+            const dates = Object.keys(appState.tournamentHistory).sort().reverse(); // Sort descending by date
+
+            if (dates.length === 0) {
+                pastTournamentsList.innerHTML = '<p class="text-gray-600">No past tournaments saved yet.</p>';
+                return;
+            }
+
+            dates.forEach(date => {
+                const tournament = appState.tournamentHistory[date];
+                const winnerInfo = tournament.winnerTeamId ? `Winner: ${tournament.teams.find(t => t.teamId === tournament.winnerTeamId)?.displayName || 'N/A'}` : 'Not completed';
+                const listItem = document.createElement('div');
+                listItem.className = 'flex items-center justify-between p-3 bg-white rounded-lg shadow-sm hover:bg-gray-50 cursor-pointer transition-colors duration-200';
+                listItem.innerHTML = `
+                    <span class="font-medium text-gray-800">${new Date(date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                    <span class="text-sm text-gray-600">${winnerInfo}</span>
+                    <button data-date="${date}" class="view-record-btn btn-secondary text-sm py-1 px-3">View</button>
+                `;
+                pastTournamentsList.appendChild(listItem);
+            });
+
+            document.querySelectorAll('.view-record-btn').forEach(button => {
+                button.onclick = (event) => {
+                    const date = event.target.dataset.date;
+                    viewPastTournament(date);
+                };
+            });
+        }
+
+        /**
+         * Displays the details of a past tournament.
+         * @param {string} date - The date of the tournament to view.
+         */
+        function viewPastTournament(date) {
+            const tournament = appState.tournamentHistory[date];
+            if (!tournament) {
+                showMessage("Tournament data not found for this date.", "error");
+                return;
+            }
+
+            // Temporarily set appState to this past tournament's data for display
+            appState.players = tournament.players;
+            appState.teams = tournament.teams;
+            appState.leagueMatches = tournament.leagueMatches;
+            appState.knockoutMatches = tournament.knockoutMatches;
+            appState.rankedTeams = tournament.finalRankings; // Use finalRankings for display
+            appState.selectedDate = date;
+
+            // Render sections with past data
+            renderFixtures();
+            renderPointsTable();
+            renderKnockoutMatches();
+            displayFinalWinner(); // Display winner for past tournament
+
+            // Hide buttons that modify state
+            generateTeamsBtn.classList.add('hidden');
+            startLeagueBtn.classList.add('hidden');
+            startKnockoutBtn.classList.add('hidden');
+            saveTournamentBtn.classList.add('hidden');
+            document.querySelectorAll('.update-score-btn').forEach(btn => btn.classList.add('hidden')); // Hide update score buttons
+
+            showMessage(`Viewing tournament from ${new Date(date).toLocaleDateString()}.`, "info");
+            renderUI('records'); // Switch to records view, but show other sections
+            playerInputSection.classList.add('hidden'); // Hide input section
+            fixturesSection.classList.remove('hidden');
+            pointsTableSection.classList.remove('hidden');
+            knockoutSection.classList.remove('hidden');
+            recordsSection.classList.remove('hidden');
+        }
+
+        /**
+         * Resets the app state to start a new tournament.
+         */
+        function startNewTournament() {
+            appState = {
+                players: [],
+                teams: [],
+                leagueMatches: [],
+                knockoutMatches: [],
+                currentPhase: 'input',
+                currentMatchIndex: -1,
+                currentMatchArrayType: null,
+                tournamentHistory: appState.tournamentHistory, // Preserve history
+                selectedDate: null,
+                scorecardLiveTeam1Score: 0,
+                scorecardLiveTeam2Score: 0
+            };
+            // Reset UI elements
+            playerCountSlider.value = 4;
+            playerCountDisplay.textContent = 4;
+            renderPlayerInputs(); // Re-render initial player inputs
+            fixturesContainer.innerHTML = '';
+            pointsTableBody.innerHTML = '';
+            knockoutMatchesContainer.innerHTML = '';
+            finalWinnerDisplay.classList.add('hidden');
+
+            // Show relevant buttons again
+            generateTeamsBtn.classList.remove('hidden');
+            startLeagueBtn.classList.remove('hidden');
+            startKnockoutBtn.classList.remove('hidden');
+            saveTournamentBtn.classList.remove('hidden');
+            document.querySelectorAll('.update-score-btn').forEach(btn => btn.classList.remove('hidden')); // Show update score buttons
+
+            showMessage("Starting a new tournament!", "info");
+            renderUI('input');
+        }
+
+        /**
+         * Controls which sections of the app are visible based on the current phase.
+         * @param {string} phase - The phase to display ('splash', 'input', 'fixtures', 'scorecard', 'pointsTable', 'knockout', 'records').
+         */
+        function renderUI(phase) {
+            appState.currentPhase = phase;
+            splashScreen.classList.add('hidden');
+            appContent.classList.add('hidden');
+            playerInputSection.classList.add('hidden');
+            fixturesSection.classList.add('hidden');
+            pointsTableSection.classList.add('hidden');
+            knockoutSection.classList.add('hidden');
+            recordsSection.classList.add('hidden');
+
+            if (phase === 'splash') {
+                splashScreen.classList.remove('hidden');
+            } else {
+                appContent.classList.remove('hidden');
+                if (phase === 'input') {
+                    playerInputSection.classList.remove('hidden');
+                } else if (phase === 'fixtures') {
+                    playerInputSection.classList.remove('hidden'); // Keep player input visible
+                    fixturesSection.classList.remove('hidden');
+                } else if (phase === 'pointsTable') {
+                    playerInputSection.classList.add('hidden');
+                    fixturesSection.classList.remove('hidden'); // Keep fixtures visible
+                    pointsTableSection.classList.remove('hidden');
+                } else if (phase === 'knockout') {
+                    playerInputSection.classList.add('hidden');
+                    fixturesSection.classList.remove('hidden'); // Keep fixtures visible
+                    pointsTableSection.classList.remove('hidden'); // Keep points table visible
+                    knockoutSection.classList.remove('hidden');
+                } else if (phase === 'records') {
+                    recordsSection.classList.remove('hidden');
+                }
+            }
+        }
+
+        // --- Event Listeners ---
+
+        // Initial render for splash screen
+        document.addEventListener('DOMContentLoaded', () => {
+            loadTournamentHistory(); // Load history on app start
+            renderUI('splash');
+            renderPlayerInputs(); // Render initial player inputs even if hidden
+        });
+
+        startButton.addEventListener('click', () => {
+            renderUI('input');
+        });
+
+        playerCountSlider.addEventListener('input', () => {
+            const count = parseInt(playerCountSlider.value);
+            playerCountDisplay.textContent = count;
+            renderPlayerInputs();
+        });
+
+        generateTeamsBtn.addEventListener('click', () => {
+            const playerNameInputs = document.querySelectorAll('.player-name-input');
+            const newPlayers = [];
+            let allNamesValid = true;
+
+            playerNameInputs.forEach(input => {
+                const name = input.value.trim();
+                if (!name) {
+                    showMessage("All player names must be entered.", "error");
+                    allNamesValid = false;
+                    input.focus();
+                    return;
+                }
+                if (!isValidName(name)) {
+                    showMessage(`Player name "${name}" contains invalid characters. Only alphabets and spaces are allowed.`, "error");
+                    allNamesValid = false;
+                    input.focus();
+                    return;
+                }
+                newPlayers.push(new Player(name));
+            });
+
+            if (!allNamesValid) {
+                return;
+            }
+
+            appState.players = newPlayers;
+            appState.teams = createTeams(appState.players);
+            appState.leagueMatches = generateFixtures(appState.teams);
+
+            if (appState.teams.length === 0) {
+                showMessage("Could not create teams. Please check player count.", "error");
+                return;
+            }
+
+            showMessage(`Teams and ${appState.leagueMatches.length} league matches generated!`, "success");
+            renderFixtures();
+            renderUI('fixtures');
+        });
+
+        startLeagueBtn.addEventListener('click', () => {
+            if (!allLeagueMatchesPlayed()) {
+                showMessage("Please complete all league matches before viewing the points table.", "info");
+                return;
+            }
+            renderPointsTable();
+            renderUI('pointsTable');
+        });
+
+        // Scorecard Modal Logic
+        liveScoreOption.addEventListener('change', () => {
+            liveScoreControls.classList.remove('hidden');
+            finalScoreInputs.classList.add('hidden');
+        });
+
+        finalScoreOption.addEventListener('change', () => {
+            liveScoreControls.classList.add('hidden');
+            finalScoreInputs.classList.remove('hidden');
+        });
+
+        team1ScorePlus.addEventListener('click', () => {
+            appState.scorecardLiveTeam1Score++;
+            team1ScoreDisplay.textContent = appState.scorecardLiveTeam1Score;
+        });
+        team1ScoreMinus.addEventListener('click', () => {
+            if (appState.scorecardLiveTeam1Score > 0) {
+                appState.scorecardLiveTeam1Score--;
+                team1ScoreDisplay.textContent = appState.scorecardLiveTeam1Score;
+            }
+        });
+        team2ScorePlus.addEventListener('click', () => {
+            appState.scorecardLiveTeam2Score++;
+            team2ScoreDisplay.textContent = appState.scorecardLiveTeam2Score;
+        });
+        team2ScoreMinus.addEventListener('click', () => {
+            if (appState.scorecardLiveTeam2Score > 0) {
+                appState.scorecardLiveTeam2Score--;
+                team2ScoreDisplay.textContent = appState.scorecardLiveTeam2Score;
+            }
+            // Ensure scores are non-negative
+            if (appState.scorecardLiveTeam2Score < 0) appState.scorecardLiveTeam2Score = 0; // Guard against negative
+        });
+
+        saveScoreBtn.addEventListener('click', () => {
+            let score1, score2;
+            let winnerDetermined = false;
+
+            if (liveScoreOption.checked) {
+                score1 = appState.scorecardLiveTeam1Score;
+                score2 = appState.scorecardLiveTeam2Score;
+
+                // Validate scores for live scoring
+                if (score1 < 0 || score2 < 0) {
+                    showMessage("Scores cannot be negative.", "error");
+                    return;
+                }
+                // Call updateMatchScore and capture if a winner was determined
+                winnerDetermined = updateMatchScore(appState.currentMatchIndex, score1, score2, appState.currentMatchArrayType);
+
+            } else { // Final score option
+                score1 = parseInt(finalTeam1ScoreInput.value);
+                score2 = parseInt(finalTeam2ScoreInput.value);
+                if (isNaN(score1) || isNaN(score2) || score1 < 0 || score2 < 0) {
+                    showMessage("Please enter valid non-negative scores.", "error");
+                    return;
+                }
+                if (score1 === score2) {
+                    showMessage("Scores cannot be tied in a single set. Please adjust scores.", "error");
+                    return;
+                }
+                // For final score, always assume winner is determined
+                winnerDetermined = updateMatchScore(appState.currentMatchIndex, score1, score2, appState.currentMatchArrayType);
+            }
+
+            // Only close modal if a winner is determined
+            if (winnerDetermined) {
+                closeScorecardModal();
+            }
+        });
+
+        cancelScoreBtn.addEventListener('click', () => {
+            closeScorecardModal();
+        });
+
+        startKnockoutBtn.addEventListener('click', () => {
+            if (!appState.rankedTeams || appState.rankedTeams.length < 4) {
+                showMessage("Not enough teams for knockout stage (minimum 4 teams required).", "error");
+                return;
+            }
+            // This condition now correctly checks if matches exist and are played
+            if (!allKnockoutMatchesPlayed()) {
+                renderKnockoutMatches();
+                renderUI('knockout');
+            } else {
+                showMessage("Knockout stage is already complete.", "info");
+            }
+        });
+
+        saveTournamentBtn.addEventListener('click', () => {
+            if (!allLeagueMatchesPlayed()) {
+                showMessage("Please complete all league matches before saving the tournament.", "error");
+                return;
+            }
+            if (!allKnockoutMatchesPlayed()) {
+                showMessage("Please complete all knockout matches before saving the tournament.", "error");
+                return;
+            }
+            saveTournament();
+            renderUI('records');
+        });
+
+        newTournamentBtn.addEventListener('click', () => {
+            startNewTournament();
+        });
+
+    </script>
+</body>
+</html>
